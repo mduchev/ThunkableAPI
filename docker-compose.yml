@@ -1,0 +1,65 @@
+version: '3.4'
+
+services:
+  mongo:
+    container_name: mongo
+    image: mongo
+    restart: on-failure:5
+    volumes:
+      - ./data:/data/db
+    ports:
+      - 27017:27017
+  rabbitmq:
+    container_name: 'rabbitmq'
+    image: rabbitmq:3-management-alpine
+    ports:
+      - 5672:5672
+      - 15672:15672
+    volumes:
+      - ~/.docker-conf/rabbitmq/data/:/var/lib/rabbitmq/
+      - ~/.docker-conf/rabbitmq/log/:/var/log/rabbitmq
+  longer:
+    container_name: longer
+    build:
+      dockerfile: Dockerfile
+      context: ./longer
+    restart: always
+    depends_on:
+      - mongo
+      - rabbitmq
+    volumes:
+      - .:/app/
+      - /app/longer/node_modules
+    env_file:
+      - ./.env
+  main:
+    container_name: main
+    build:
+      dockerfile: Dockerfile
+      context: ./main
+    restart: always
+    ports:
+      - 3000:3000
+    depends_on:
+      - mongo
+      - rabbitmq
+    volumes:
+      - .:/app/
+      - /app/main/node_modules
+    env_file:
+      - ./.env
+  estimation:
+    container_name: estimation
+    build:
+      dockerfile: Dockerfile
+      context: ./estimation
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - main
+    volumes:
+      - .:/app/
+      - /app/estimation/node_modules
+    env_file:
+      - ./.env
